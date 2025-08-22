@@ -480,6 +480,9 @@ function displayUsageLogs(usageLogs) {
     // Create body for usage logs
     const tbody = document.createElement('tbody');
     
+    // Sort usage logs by search_timestamp descending
+    usageLogs.sort((a, b) => new Date(b.search_timestamp) - new Date(a.search_timestamp));
+    
     usageLogs.forEach(record => {
         const row = document.createElement('tr');
         
