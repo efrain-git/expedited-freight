@@ -110,7 +110,6 @@ async function login(username, password) {
         
         if (error) {
             if (error.code === 'PGRST116') {
-                // No rows returned - invalid credentials
                 throw new Error('Invalid username or password');
             }
             throw error;
@@ -121,9 +120,10 @@ async function login(username, password) {
             currentUser = data.username;
             document.getElementById('username-display').textContent = currentUser;
             
-            // Store session in localStorage for persistence
-            localStorage.setItem('currentUser', currentUser);
+            // Show/hide admin-only features
+            toggleAdminFeatures(currentUser);
             
+            localStorage.setItem('currentUser', currentUser);
             showPage('searchPage');
             return { success: true };
         } else {
@@ -139,9 +139,32 @@ async function login(username, password) {
     }
 }
 
+function toggleAdminFeatures(username) {
+    const showAllButton = document.getElementById('showAllButton');
+    
+    if (username === 'admin') {
+        // Show admin features
+        if (showAllButton) {
+            showAllButton.classList.remove('hidden');
+        }
+        debugLog(`Admin features enabled for user: ${username}`);
+    } else {
+        // Hide admin features
+        if (showAllButton) {
+            showAllButton.classList.add('hidden');
+        }
+        debugLog(`Admin features disabled for user: ${username}`);
+    }
+}
+
+
 function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser');
+    
+    // Hide admin features
+    toggleAdminFeatures('');
+    
     showPage('loginPage');
     clearErrors();
     
@@ -153,6 +176,7 @@ function logout() {
     // Clear results
     clearSearchResults();
 }
+
 
 // Debug function to output to the debug span
 function debugLog(message) {
@@ -273,8 +297,9 @@ async function showAllRecords() {
         debugLog(`Showing all records...`);
         setLoading(true);
         
+        //was dot_records
         const { data, error } = await supabase
-            .from('dot_records')
+            .from('usage_logs')
             .select('*');
             
         if (error) throw error;
@@ -445,12 +470,16 @@ function displayValidationErrors(errors) {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing app...');
-    
+
     // Check for existing session
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
         currentUser = storedUser;
         document.getElementById('username-display').textContent = currentUser;
+        
+        // Show/hide admin features based on stored user
+        toggleAdminFeatures(currentUser);
+        
         showPage('searchPage');
     } else {
         showPage('loginPage');
