@@ -1,617 +1,582 @@
-// Sample data for demonstration
-const sampleData = [
-  {
-    dotNumber: "1234567",
-    docketNumber: "MC-123456",
-    legalName: "ABC Transportation LLC",
-    dbaName: "ABC Express",
-    businessStreet: "123 Main Street",
-    businessCity: "Dallas",
-    businessStateCode: "TX",
-    businessZipCode: "75201",
-    businessPhone: "(214) 555-0123",
-    cellPhone: "(214) 555-0124",
-    createdDate: "2023-01-15",
-    createdBy: "John Smith",
-    createdByEmail: "john.smith@company.com",
-    modifiedDate: "2023-06-20",
-    modifiedBy: "Jane Doe",
-    modifiedByEmail: "jane.doe@company.com",
-    source: "FMCSA"
-  },
-  {
-    dotNumber: "2345678",
-    docketNumber: "MC-234567",
-    legalName: "XYZ Logistics Inc",
-    dbaName: "XYZ Freight",
-    businessStreet: "456 Commerce Blvd",
-    businessCity: "Houston",
-    businessStateCode: "TX",
-    businessZipCode: "77002",
-    businessPhone: "(713) 555-0234",
-    cellPhone: "(713) 555-0235",
-    createdDate: "2023-02-20",
-    createdBy: "Mike Johnson",
-    createdByEmail: "mike.johnson@company.com",
-    modifiedDate: "2023-07-15",
-    modifiedBy: "Sarah Wilson",
-    modifiedByEmail: "sarah.wilson@company.com",
-    source: "Manual Entry"
-  },
-  {
-    dotNumber: "3456789",
-    docketNumber: "MC-345678",
-    legalName: "Lone Star Trucking",
-    dbaName: "Lone Star Express",
-    businessStreet: "789 Industrial Way",
-    businessCity: "Austin",
-    businessStateCode: "TX",
-    businessZipCode: "78701",
-    businessPhone: "(512) 555-0345",
-    cellPhone: "(512) 555-0346",
-    createdDate: "2023-03-10",
-    createdBy: "Bob Martinez",
-    createdByEmail: "bob.martinez@company.com",
-    modifiedDate: "2023-08-05",
-    modifiedBy: "Lisa Brown",
-    modifiedByEmail: "lisa.brown@company.com",
-    source: "API Import"
-  },
-  {
-    dotNumber: "4567890",
-    docketNumber: "MC-456789",
-    legalName: "Swift Transport Solutions",
-    dbaName: "Swift Delivery",
-    businessStreet: "321 Highway 35",
-    businessCity: "San Antonio",
-    businessStateCode: "TX",
-    businessZipCode: "78202",
-    businessPhone: "(210) 555-0456",
-    cellPhone: "(210) 555-0457",
-    createdDate: "2023-04-05",
-    createdBy: "Amanda Davis",
-    createdByEmail: "amanda.davis@company.com",
-    modifiedDate: "2023-09-12",
-    modifiedBy: "Chris Taylor",
-    modifiedByEmail: "chris.taylor@company.com",
-    source: "FMCSA"
-  }
-];
+// Supabase Configuration
+const SUPABASE_URL = 'https://quvalmzdeziaxnqpmkqa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1dmFsbXpkZXppYXhucXBta3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODUxODEsImV4cCI6MjA3MTQ2MTE4MX0.nsaaeBLXJ0LnHApKZV1CArL33U_0kVGg6XnD2geG9Sk';
 
-// Usage log simulation (in real app, this would be sent to a backend)
-const usageLog = [];
+// Initialize Supabase client
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Application state
-let currentUser = null;
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing app...');
-    initializeApp();
-    setupEventListeners();
-});
-
-function initializeApp() {
-    console.log('Initializing app...');
+// Application State
+class AppState {
+    constructor() {
+        this.currentUser = null;
+        this.isLoading = false;
+    }
     
-    // Check if user is already logged in
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    const username = sessionStorage.getItem('username');
+    setUser(user) {
+        this.currentUser = user;
+        if (user) {
+            document.getElementById('userEmail').textContent = user.email;
+        }
+    }
     
-    console.log('Login check:', { isLoggedIn, username });
-    
-    if (isLoggedIn && username) {
-        showSearchPage(username);
-    } else {
-        showLoginPage();
+    setLoading(loading) {
+        this.isLoading = loading;
+        const overlay = document.getElementById('loadingOverlay');
+        if (loading) {
+            overlay.classList.remove('hidden');
+        } else {
+            overlay.classList.add('hidden');
+        }
     }
 }
 
-function setupEventListeners() {
-    console.log('Setting up event listeners...');
+const appState = new AppState();
+
+// Page Navigation
+class PageManager {
+    static showPage(pageId) {
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // Show requested page
+        const targetPage = document.getElementById(pageId);
+        if (targetPage) {
+            targetPage.classList.add('active');
+        }
+    }
     
-    // Login form submission
+    static showLogin() {
+        this.showPage('loginPage');
+    }
+    
+    static showSignup() {
+        this.showPage('signupPage');
+    }
+    
+    static showSearch() {
+        this.showPage('searchPage');
+    }
+}
+
+// Authentication Manager
+class AuthManager {
+    static async login(email, password) {
+        try {
+            appState.setLoading(true);
+            this.clearErrors('login');
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) throw error;
+            
+            appState.setUser(data.user);
+            PageManager.showSearch();
+            
+            return { success: true, user: data.user };
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showError('loginError', error.message);
+            return { success: false, error: error.message };
+        } finally {
+            appState.setLoading(false);
+        }
+    }
+    
+    static async signup(email, password) {
+        try {
+            appState.setLoading(true);
+            this.clearErrors('signup');
+            
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+            
+            if (error) throw error;
+            
+            this.showSuccess('signupSuccess', 'Account created successfully! Please check your email to confirm your account.');
+            
+            return { success: true, user: data.user };
+        } catch (error) {
+            console.error('Signup error:', error);
+            this.showError('signupError', error.message);
+            return { success: false, error: error.message };
+        } finally {
+            appState.setLoading(false);
+        }
+    }
+    
+    static async logout() {
+        try {
+            appState.setLoading(true);
+            
+            const { error } = await supabase.auth.signOut();
+            
+            if (error) throw error;
+            
+            appState.setUser(null);
+            PageManager.showLogin();
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Logout error:', error);
+            return { success: false, error: error.message };
+        } finally {
+            appState.setLoading(false);
+        }
+    }
+    
+    static async getCurrentUser() {
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            
+            if (error) throw error;
+            
+            return user;
+        } catch (error) {
+            console.error('Get user error:', error);
+            return null;
+        }
+    }
+    
+    static showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+    
+    static showSuccess(elementId, message) {
+        const successElement = document.getElementById(elementId);
+        if (successElement) {
+            successElement.textContent = message;
+            successElement.classList.remove('hidden');
+        }
+    }
+    
+    static clearErrors(prefix) {
+        const errorElements = document.querySelectorAll(`[id*="${prefix}"][id*="Error"]`);
+        errorElements.forEach(element => {
+            element.textContent = '';
+            element.classList.add('hidden');
+        });
+        
+        const successElements = document.querySelectorAll(`[id*="${prefix}"][id*="Success"]`);
+        successElements.forEach(element => {
+            element.textContent = '';
+            element.classList.add('hidden');
+        });
+    }
+}
+
+// Search Manager
+class SearchManager {
+    static async searchRecords(searchTerm, searchType) {
+        try {
+            appState.setLoading(true);
+            this.clearSearchResults();
+            this.clearErrors();
+            
+            // Validate input
+            if (!searchTerm.trim()) {
+                throw new Error('Please enter a search term');
+            }
+            
+            // Build query based on search type
+            let query = supabase.from('dot_records').select('*');
+            
+            if (searchType === 'DOT') {
+                query = query.eq('dot_number', searchTerm.trim());
+            } else if (searchType === 'DOCKET') {
+                query = query.eq('docket_number', searchTerm.trim().toUpperCase());
+            } else {
+                throw new Error('Invalid search type');
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            
+            // Log the search
+            await this.logSearch(searchTerm, searchType, data ? data.length : 0);
+            
+            // Display results
+            if (data && data.length > 0) {
+                this.displayResults(data);
+            } else {
+                this.displayNoResults();
+            }
+            
+            return { success: true, results: data };
+        } catch (error) {
+            console.error('Search error:', error);
+            this.showError(error.message);
+            return { success: false, error: error.message };
+        } finally {
+            appState.setLoading(false);
+        }
+    }
+    
+    static async logSearch(searchTerm, searchType, resultsFound) {
+        try {
+            const user = await AuthManager.getCurrentUser();
+            
+            const { error } = await supabase.from('usage_logs').insert({
+                search_term: searchTerm,
+                search_type: searchType,
+                user_id: user ? user.id : null,
+                results_found: resultsFound,
+                search_timestamp: new Date().toISOString()
+            });
+            
+            if (error) {
+                console.error('Logging error:', error);
+            }
+        } catch (error) {
+            console.error('Failed to log search:', error);
+        }
+    }
+    
+    static displayResults(results) {
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResultsContainer = document.getElementById('noResultsContainer');
+        const resultsContent = document.getElementById('resultsContent');
+        
+        noResultsContainer.classList.add('hidden');
+        
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'results-table';
+        
+        // Create header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        const headers = [
+            'DOT Number',
+            'Docket Number',
+            'Legal Name',
+            'DBA Name',
+            'Business Address',
+            'City',
+            'State',
+            'Zip Code',
+            'Business Phone',
+            'Cell Phone',
+            'Created Date',
+            'Source'
+        ];
+        
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // Create body
+        const tbody = document.createElement('tbody');
+        
+        results.forEach(record => {
+            const row = document.createElement('tr');
+            
+            const cells = [
+                record.dot_number || '-',
+                record.docket_number || '-',
+                record.legal_name || '-',
+                record.dba_name || '-',
+                record.business_street || '-',
+                record.business_city || '-',
+                record.business_state_code || '-',
+                record.business_zip_code || '-',
+                record.business_phone || '-',
+                record.cell_phone || '-',
+                record.created_date ? new Date(record.created_date).toLocaleDateString() : '-',
+                record.source || '-'
+            ];
+            
+            cells.forEach(cellData => {
+                const td = document.createElement('td');
+                td.textContent = cellData;
+                row.appendChild(td);
+            });
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(tbody);
+        
+        // Create table wrapper for responsive scrolling
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'table-wrapper';
+        tableWrapper.appendChild(table);
+        
+        resultsContent.innerHTML = '';
+        resultsContent.appendChild(tableWrapper);
+        
+        resultsContainer.classList.remove('hidden');
+    }
+    
+    static displayNoResults() {
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResultsContainer = document.getElementById('noResultsContainer');
+        
+        resultsContainer.classList.add('hidden');
+        noResultsContainer.classList.remove('hidden');
+    }
+    
+    static clearSearchResults() {
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResultsContainer = document.getElementById('noResultsContainer');
+        
+        resultsContainer.classList.add('hidden');
+        noResultsContainer.classList.add('hidden');
+    }
+    
+    static showError(message) {
+        const errorElement = document.getElementById('searchError');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+    
+    static clearErrors() {
+        const errorElement = document.getElementById('searchError');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.classList.add('hidden');
+        }
+    }
+}
+
+// Form Validators
+class FormValidator {
+    static validateLogin(email, password) {
+        const errors = {};
+        
+        if (!email || !email.trim()) {
+            errors.email = 'Email is required';
+        } else if (!this.isValidEmail(email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+        
+        if (!password || !password.trim()) {
+            errors.password = 'Password is required';
+        }
+        
+        return {
+            isValid: Object.keys(errors).length === 0,
+            errors: errors
+        };
+    }
+    
+    static validateSignup(email, password, confirmPassword) {
+        const errors = {};
+        
+        if (!email || !email.trim()) {
+            errors.email = 'Email is required';
+        } else if (!this.isValidEmail(email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+        
+        if (!password || !password.trim()) {
+            errors.password = 'Password is required';
+        } else if (password.length < 6) {
+            errors.password = 'Password must be at least 6 characters long';
+        }
+        
+        if (!confirmPassword || !confirmPassword.trim()) {
+            errors.confirmPassword = 'Please confirm your password';
+        } else if (password !== confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+        
+        return {
+            isValid: Object.keys(errors).length === 0,
+            errors: errors
+        };
+    }
+    
+    static isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    static displayErrors(errors, prefix) {
+        // Clear previous errors
+        Object.keys(errors).forEach(field => {
+            const errorElement = document.getElementById(`${prefix}${field.charAt(0).toUpperCase() + field.slice(1)}Error`);
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.add('hidden');
+            }
+        });
+        
+        // Display new errors
+        Object.keys(errors).forEach(field => {
+            const errorElement = document.getElementById(`${prefix}${field.charAt(0).toUpperCase() + field.slice(1)}Error`);
+            if (errorElement) {
+                errorElement.textContent = errors[field];
+                errorElement.classList.remove('hidden');
+            }
+        });
+    }
+}
+
+// Button State Manager
+class ButtonManager {
+    static setLoading(buttonId, textId, spinnerId, loading) {
+        const button = document.getElementById(buttonId);
+        const text = document.getElementById(textId);
+        const spinner = document.getElementById(spinnerId);
+        
+        if (button && text && spinner) {
+            button.disabled = loading;
+            if (loading) {
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+    }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check for existing session
+    try {
+        const user = await AuthManager.getCurrentUser();
+        if (user) {
+            appState.setUser(user);
+            PageManager.showSearch();
+        } else {
+            PageManager.showLogin();
+        }
+    } catch (error) {
+        console.error('Session check error:', error);
+        PageManager.showLogin();
+    }
+    
+    // Login Form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('Login form submitted');
-            handleLogin(e);
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const validation = FormValidator.validateLogin(email, password);
+            
+            if (!validation.isValid) {
+                FormValidator.displayErrors(validation.errors, '');
+                return;
+            }
+            
+            ButtonManager.setLoading('loginForm', 'loginButtonText', 'loginSpinner', true);
+            
+            const result = await AuthManager.login(email, password);
+            
+            ButtonManager.setLoading('loginForm', 'loginButtonText', 'loginSpinner', false);
         });
     }
     
-    // Search form submission
+    // Signup Form
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        signupForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const validation = FormValidator.validateSignup(email, password, confirmPassword);
+            
+            if (!validation.isValid) {
+                FormValidator.displayErrors(validation.errors, 'signup');
+                return;
+            }
+            
+            ButtonManager.setLoading('signupForm', 'signupButtonText', 'signupSpinner', true);
+            
+            const result = await AuthManager.signup(email, password);
+            
+            ButtonManager.setLoading('signupForm', 'signupButtonText', 'signupSpinner', false);
+        });
+    }
+    
+    // Search Form
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
+        searchForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('Search form submitted');
-            handleSearch(e);
+            
+            const searchTerm = document.getElementById('searchTerm').value;
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            
+            ButtonManager.setLoading('searchForm', 'searchButtonText', 'searchSpinner', true);
+            
+            const result = await SearchManager.searchRecords(searchTerm, searchType);
+            
+            ButtonManager.setLoading('searchForm', 'searchButtonText', 'searchSpinner', false);
         });
     }
     
-    // Logout button
+    // Navigation Links
+    const showSignupLink = document.getElementById('showSignup');
+    if (showSignupLink) {
+        showSignupLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            PageManager.showSignup();
+        });
+    }
+    
+    const showLoginLink = document.getElementById('showLogin');
+    if (showLoginLink) {
+        showLoginLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            PageManager.showLogin();
+        });
+    }
+    
+    // Logout Button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            console.log('Logout clicked');
-            handleLogout();
+            await AuthManager.logout();
         });
     }
     
-    // Auto-detect search type based on input
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', autoDetectSearchType);
-    }
-}
-
-function handleLogin(e) {
-    console.log('handleLogin called');
-    
-    const usernameField = document.getElementById('username');
-    const passwordField = document.getElementById('password');
-    
-    if (!usernameField || !passwordField) {
-        console.error('Username or password field not found');
-        return;
-    }
-    
-    const username = usernameField.value.trim();
-    const password = passwordField.value.trim();
-    
-    console.log('Login attempt:', { username: username, passwordLength: password.length });
-    
-    // Clear previous error messages
-    clearErrorMessages();
-    
-    // Validate inputs
-    let isValid = true;
-    
-    if (!username) {
-        showError('usernameError', 'Username is required');
-        isValid = false;
-    }
-    
-    if (!password) {
-        showError('passwordError', 'Password is required');
-        isValid = false;
-    }
-    
-    if (!isValid) {
-        console.log('Validation failed');
-        return;
-    }
-    
-    // Show loading state
-    showLoginLoading(true);
-    
-    // Simulate login process with shorter timeout for better UX
-    setTimeout(() => {
-        console.log('Processing login...');
-        
-        // For demo purposes, accept any non-empty username/password
-        if (username.length > 0 && password.length > 0) {
-            console.log('Login successful, storing session');
-            
-            // Store session
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('username', username);
-            currentUser = username;
-            
-            // Log the login
-            logUsage('LOGIN', username, new Date().toISOString());
-            
-            // Clear form
-            usernameField.value = '';
-            passwordField.value = '';
-            
-            showLoginLoading(false);
-            console.log('Redirecting to search page');
-            showSearchPage(username);
-        } else {
-            console.log('Login failed - empty credentials');
-            showLoginLoading(false);
-            showError('passwordError', 'Invalid credentials');
+    // Listen for auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            appState.setUser(session.user);
+            PageManager.showSearch();
+        } else if (event === 'SIGNED_OUT') {
+            appState.setUser(null);
+            PageManager.showLogin();
         }
-    }, 500); // Reduced timeout for better responsiveness
-}
-
-function handleSearch(e) {
-    console.log('handleSearch called');
-    
-    const searchInput = document.getElementById('searchInput');
-    if (!searchInput) {
-        console.error('Search input field not found');
-        return;
-    }
-    
-    const searchValue = searchInput.value.trim();
-    const searchTypeElement = document.querySelector('input[name="searchType"]:checked');
-    
-    if (!searchTypeElement) {
-        alert('Please select a search type');
-        return;
-    }
-    
-    const searchType = searchTypeElement.value;
-    const username = sessionStorage.getItem('username') || currentUser;
-    
-    console.log('Search params:', { searchValue, searchType, username });
-    
-    if (!searchValue) {
-        alert('Please enter a search value');
-        return;
-    }
-    
-    // Show loading state
-    showSearchLoading(true);
-    
-    // Hide previous results
-    hideResults();
-    
-    // Simulate search process
-    setTimeout(() => {
-        const results = performSearch(searchValue, searchType);
-        console.log('Search results:', results.length, 'records found');
-        
-        // Log the search
-        logUsage('SEARCH', username, new Date().toISOString(), {
-            searchTerm: searchValue,
-            searchType: searchType,
-            resultsFound: results.length
-        });
-        
-        showSearchLoading(false);
-        displayResults(results);
-    }, 800);
-}
-
-function performSearch(searchTerm, searchType) {
-    const term = searchTerm.toLowerCase().trim();
-    
-    const results = sampleData.filter(record => {
-        if (searchType === 'dot') {
-            return record.dotNumber.toLowerCase().includes(term);
-        } else if (searchType === 'docket') {
-            return record.docketNumber.toLowerCase().includes(term);
-        }
-        return false;
     });
-    
-    console.log(`Search for "${term}" (${searchType}) found ${results.length} results`);
-    return results;
-}
+});
 
-function displayResults(results) {
-    const resultsContainer = document.getElementById('resultsContainer');
-    const resultsSection = document.getElementById('resultsSection');
-    
-    if (!resultsContainer) {
-        console.error('Results container not found');
-        return;
-    }
-    
-    if (results.length === 0) {
-        showNoResults();
-        return;
-    }
-    
-    // Create table for desktop view
-    const tableHTML = createResultsTable(results);
-    
-    // Create cards for mobile view
-    const cardsHTML = createResultsCards(results);
-    
-    resultsContainer.innerHTML = tableHTML + cardsHTML;
-    
-    if (resultsSection) {
-        resultsSection.classList.remove('hidden');
-    }
-}
+// Global error handler
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.error);
+});
 
-function createResultsTable(results) {
-    let tableHTML = `
-        <div class="table-container">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>DOT Number</th>
-                        <th>Docket Number</th>
-                        <th>Legal Name</th>
-                        <th>DBA Name</th>
-                        <th>Business Address</th>
-                        <th>Phone</th>
-                        <th>Source</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    results.forEach(record => {
-        const address = `${record.businessStreet}, ${record.businessCity}, ${record.businessStateCode} ${record.businessZipCode}`;
-        tableHTML += `
-            <tr>
-                <td>${record.dotNumber}</td>
-                <td>${record.docketNumber}</td>
-                <td>${record.legalName}</td>
-                <td>${record.dbaName}</td>
-                <td>${address}</td>
-                <td>${record.businessPhone}</td>
-                <td><span class="status-badge">${record.source}</span></td>
-            </tr>
-        `;
-    });
-    
-    tableHTML += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    return tableHTML;
-}
-
-function createResultsCards(results) {
-    let cardsHTML = '<div class="mobile-results">';
-    
-    results.forEach(record => {
-        cardsHTML += `
-            <div class="record-card">
-                <div class="record-header">
-                    <div>
-                        <h4 class="record-title">${record.legalName}</h4>
-                        <p class="record-subtitle">${record.dbaName}</p>
-                    </div>
-                    <span class="status-badge">${record.source}</span>
-                </div>
-                <div class="record-fields">
-                    <div class="record-field">
-                        <span class="field-label">DOT Number</span>
-                        <span class="field-value">${record.dotNumber}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Docket Number</span>
-                        <span class="field-value">${record.docketNumber}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Business Address</span>
-                        <span class="field-value">${record.businessStreet}<br>${record.businessCity}, ${record.businessStateCode} ${record.businessZipCode}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Business Phone</span>
-                        <span class="field-value">${record.businessPhone}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Cell Phone</span>
-                        <span class="field-value">${record.cellPhone}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Created By</span>
-                        <span class="field-value">${record.createdBy}<br><small>${record.createdByEmail}</small></span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Modified By</span>
-                        <span class="field-value">${record.modifiedBy}<br><small>${record.modifiedByEmail}</small></span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Created Date</span>
-                        <span class="field-value">${formatDate(record.createdDate)}</span>
-                    </div>
-                    <div class="record-field">
-                        <span class="field-label">Modified Date</span>
-                        <span class="field-value">${formatDate(record.modifiedDate)}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    cardsHTML += '</div>';
-    return cardsHTML;
-}
-
-function autoDetectSearchType(e) {
-    const value = e.target.value.trim().toLowerCase();
-    const dotRadio = document.querySelector('input[name="searchType"][value="dot"]');
-    const docketRadio = document.querySelector('input[name="searchType"][value="docket"]');
-    
-    if (!dotRadio || !docketRadio) return;
-    
-    // Auto-detect based on format
-    if (value.startsWith('mc-')) {
-        docketRadio.checked = true;
-    } else if (/^\d+$/.test(value)) {
-        dotRadio.checked = true;
-    }
-}
-
-function handleLogout() {
-    console.log('handleLogout called');
-    
-    const username = sessionStorage.getItem('username') || currentUser || 'Unknown';
-    
-    // Log the logout
-    logUsage('LOGOUT', username, new Date().toISOString());
-    
-    // Clear session
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('username');
-    currentUser = null;
-    
-    // Show login page
-    showLoginPage();
-    
-    // Reset forms
-    const loginForm = document.getElementById('loginForm');
-    const searchForm = document.getElementById('searchForm');
-    
-    if (loginForm) {
-        loginForm.reset();
-    }
-    if (searchForm) {
-        searchForm.reset();
-    }
-    
-    clearErrorMessages();
-    hideResults();
-    
-    console.log('Logout completed');
-}
-
-function showLoginPage() {
-    console.log('Showing login page');
-    
-    const loginPage = document.getElementById('loginPage');
-    const searchPage = document.getElementById('searchPage');
-    
-    if (loginPage) {
-        loginPage.classList.remove('hidden');
-        console.log('Login page shown');
-    }
-    if (searchPage) {
-        searchPage.classList.add('hidden');
-        console.log('Search page hidden');
-    }
-    
-    document.title = 'Login - DOT/Docket Search System';
-}
-
-function showSearchPage(username) {
-    console.log('Showing search page for user:', username);
-    
-    const loginPage = document.getElementById('loginPage');
-    const searchPage = document.getElementById('searchPage');
-    const welcomeMessage = document.getElementById('welcomeMessage');
-    
-    if (loginPage) {
-        loginPage.classList.add('hidden');
-        console.log('Login page hidden');
-    }
-    if (searchPage) {
-        searchPage.classList.remove('hidden');
-        console.log('Search page shown');
-    }
-    if (welcomeMessage) {
-        welcomeMessage.textContent = `Welcome, ${username}`;
-        console.log('Welcome message set');
-    }
-    
-    document.title = 'Search - DOT/Docket Search System';
-}
-
-function showLoginLoading(loading) {
-    const loginButton = document.querySelector('#loginForm button[type="submit"]');
-    const buttonText = document.getElementById('loginButtonText');
-    const spinner = document.getElementById('loginSpinner');
-    
-    if (!loginButton) return;
-    
-    if (loading) {
-        loginButton.disabled = true;
-        if (buttonText) buttonText.textContent = 'Logging in...';
-        if (spinner) spinner.classList.remove('hidden');
-    } else {
-        loginButton.disabled = false;
-        if (buttonText) buttonText.textContent = 'Login';
-        if (spinner) spinner.classList.add('hidden');
-    }
-}
-
-function showSearchLoading(loading) {
-    const searchButton = document.querySelector('#searchForm button[type="submit"]');
-    const buttonText = document.getElementById('searchButtonText');
-    const spinner = document.getElementById('searchSpinner');
-    
-    if (!searchButton) return;
-    
-    if (loading) {
-        searchButton.disabled = true;
-        if (buttonText) buttonText.textContent = 'Searching...';
-        if (spinner) spinner.classList.remove('hidden');
-    } else {
-        searchButton.disabled = false;
-        if (buttonText) buttonText.textContent = 'Search';
-        if (spinner) spinner.classList.add('hidden');
-    }
-}
-
-function showNoResults() {
-    const noResults = document.getElementById('noResults');
-    const resultsSection = document.getElementById('resultsSection');
-    
-    if (noResults) {
-        noResults.classList.remove('hidden');
-    }
-    if (resultsSection) {
-        resultsSection.classList.add('hidden');
-    }
-}
-
-function hideResults() {
-    const resultsSection = document.getElementById('resultsSection');
-    const noResults = document.getElementById('noResults');
-    
-    if (resultsSection) {
-        resultsSection.classList.add('hidden');
-    }
-    if (noResults) {
-        noResults.classList.add('hidden');
-    }
-}
-
-function showError(elementId, message) {
-    const errorElement = document.getElementById(elementId);
-    if (errorElement) {
-        errorElement.textContent = message;
-    }
-}
-
-function clearErrorMessages() {
-    const errorElements = document.querySelectorAll('.error-message');
-    errorElements.forEach(element => {
-        element.textContent = '';
-    });
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function logUsage(action, username, timestamp, additionalData = {}) {
-    const logEntry = {
-        action,
-        username,
-        timestamp,
-        ...additionalData
-    };
-    
-    usageLog.push(logEntry);
-    
-    // In a real application, this would be sent to a backend API
-    console.log('Usage Log Entry:', logEntry);
-}
-
-// Export for debugging (in production, remove this)
-window.debugApp = {
-    sampleData,
-    usageLog,
-    currentUser,
-    clearSession: () => {
-        sessionStorage.clear();
-        currentUser = null;
-        location.reload();
-    },
-    forceLogin: (username = 'testuser') => {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('username', username);
-        currentUser = username;
-        showSearchPage(username);
-    }
-};
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
+});
