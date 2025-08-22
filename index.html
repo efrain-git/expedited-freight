@@ -20,16 +20,16 @@
                             <div class="form-group">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" id="email" name="email" class="form-control" required>
-                                <div class="error-message" id="emailError"></div>
+                                <div class="error-message hidden" id="emailError"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="password" class="form-label">Password</label>
                                 <input type="password" id="password" name="password" class="form-control" required>
-                                <div class="error-message" id="passwordError"></div>
+                                <div class="error-message hidden" id="passwordError"></div>
                             </div>
                             
-                            <button type="submit" class="btn btn--primary btn--full-width">
+                            <button type="submit" class="btn btn--primary btn--full-width" id="loginButton">
                                 <span id="loginButtonText">Login</span>
                                 <span id="loginSpinner" class="spinner hidden"></span>
                             </button>
@@ -39,7 +39,7 @@
                             <p>Don't have an account? <a href="#" id="showSignup">Sign up here</a></p>
                         </div>
                         
-                        <div class="error-message" id="loginError"></div>
+                        <div class="error-message hidden" id="loginError"></div>
                     </div>
                 </div>
             </div>
@@ -59,22 +59,22 @@
                             <div class="form-group">
                                 <label for="signupEmail" class="form-label">Email</label>
                                 <input type="email" id="signupEmail" name="signupEmail" class="form-control" required>
-                                <div class="error-message" id="signupEmailError"></div>
+                                <div class="error-message hidden" id="signupEmailError"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="signupPassword" class="form-label">Password</label>
                                 <input type="password" id="signupPassword" name="signupPassword" class="form-control" required minlength="6">
-                                <div class="error-message" id="signupPasswordError"></div>
+                                <div class="error-message hidden" id="signupPasswordError"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="confirmPassword" class="form-label">Confirm Password</label>
                                 <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
-                                <div class="error-message" id="confirmPasswordError"></div>
+                                <div class="error-message hidden" id="confirmPasswordError"></div>
                             </div>
                             
-                            <button type="submit" class="btn btn--primary btn--full-width">
+                            <button type="submit" class="btn btn--primary btn--full-width" id="signupButton">
                                 <span id="signupButtonText">Create Account</span>
                                 <span id="signupSpinner" class="spinner hidden"></span>
                             </button>
@@ -84,8 +84,8 @@
                             <p>Already have an account? <a href="#" id="showLogin">Login here</a></p>
                         </div>
                         
-                        <div class="error-message" id="signupError"></div>
-                        <div class="success-message" id="signupSuccess"></div>
+                        <div class="error-message hidden" id="signupError"></div>
+                        <div class="success-message hidden" id="signupSuccess"></div>
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                                 <label for="searchTerm" class="form-label">Enter DOT Number or Docket Number</label>
                                 <input type="text" id="searchTerm" name="searchTerm" class="form-control" 
                                        placeholder="e.g., 1234567 or MC-123456" required>
-                                <div class="error-message" id="searchError"></div>
+                                <div class="error-message hidden" id="searchError"></div>
                             </div>
                             
                             <div class="form-group">
@@ -132,7 +132,7 @@
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn--primary">
+                            <button type="submit" class="btn btn--primary" id="searchButton">
                                 <span id="searchButtonText">Search</span>
                                 <span id="searchSpinner" class="spinner hidden"></span>
                             </button>
@@ -171,7 +171,7 @@
     </div>
 
     <!-- Supabase JS Library -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     
     <!-- Main Application Script -->
     <script src="app.js"></script>
