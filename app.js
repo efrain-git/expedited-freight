@@ -174,7 +174,8 @@ async function searchRecords(searchTerm, searchType) {
         let query = supabase.from('dot_records').select('*');
         
         if (searchType === 'DOT') {
-            query = query.eq('dot_number', searchTerm.trim());
+            //query = query.eq('dot_number', searchTerm.trim());
+            //query = query.ilike('dot_number','%1234%');
         } else if (searchType === 'DOCKET') {
             query = query.eq('docket_number', searchTerm.trim().toUpperCase());
         } else {
