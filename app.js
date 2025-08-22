@@ -200,15 +200,15 @@ async function searchRecords(searchTerm, searchType) {
         // Build query based on search type
         let query = supabase.from('dot_records').select('*');
         
-        if (searchType === 'DOT') {
-            query = query.ilike('dot_number', `%${searchTerm.trim()}%`);
-            debugLog(`Query: dot_number ILIKE '%${searchTerm.trim()}%'`);
-        } else if (searchType === 'DOCKET') {
-            query = query.ilike('docket_number', `%${searchTerm.trim()}%`);
-            debugLog(`Query: docket_number ILIKE '%${searchTerm.trim()}%'`);
-        } else {
-            throw new Error('Invalid search type');
-        }
+        // if (searchType === 'DOT') {
+        //     query = query.ilike('dot_number', `%${searchTerm.trim()}%`);
+        //     debugLog(`Query: dot_number ILIKE '%${searchTerm.trim()}%'`);
+        // } else if (searchType === 'DOCKET') {
+        //     query = query.ilike('docket_number', `%${searchTerm.trim()}%`);
+        //     debugLog(`Query: docket_number ILIKE '%${searchTerm.trim()}%'`);
+        // } else {
+        //     throw new Error('Invalid search type');
+        // }
         
         debugLog(`Executing query...`);
         const { data, error } = await query;
