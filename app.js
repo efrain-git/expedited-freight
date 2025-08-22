@@ -217,6 +217,9 @@ async function searchRecords(searchTerm, searchType) {
             debugLog(`Query error: ${error.message}`);
             throw error;
         }
+
+        debugLog(`Query returned ${data ? data.length : 0} results`);
+        debugLog(`Raw data: ${JSON.stringify(data, null, 2)}`);
         
         debugLog(`Query returned ${data ? data.length : 0} results`);
         
