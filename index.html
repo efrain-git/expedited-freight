@@ -1,112 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Google Sheets API Example</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOT/Docket Search System</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Connect to Google Sheets</h1>
-  <button id="authorize_button">Authorize</button>
-  <button id="signout_button">Sign Out</button>
-  <pre id="content"></pre>
-  <script src="https://apis.google.com/js/api.js"></script>
-  <script>
-    // TODO: Replace with your own API key and Client ID
-    const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
-    const API_KEY = 'YOUR_API_KEY';
+    <!-- Login Page -->
+    <div id="loginPage" class="page">
+        <div class="container">
+            <div class="login-container">
+                <div class="card">
+                    <div class="card__body">
+                        <h1 class="login-title">DOT/Docket Search System</h1>
+                        <p class="login-subtitle">Please login to access the search system</p>
+                        
+                        <form id="loginForm" class="login-form">
+                            <div class="form-group">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" id="username" name="username" class="form-control" required>
+                                <div class="error-message" id="usernameError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" id="password" name="password" class="form-control" required>
+                                <div class="error-message" id="passwordError"></div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn--primary btn--full-width">
+                                <span id="loginButtonText">Login</span>
+                                <span id="loginSpinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                        
+                        <div class="demo-info">
+                            <p><strong>Demo:</strong> Enter any username and password to login</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // Discovery doc URL for Sheets API
-    const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+    <!-- Search Page -->
+    <div id="searchPage" class="page hidden">
+        <div class="container">
+            <header class="page-header">
+                <h1>DOT/Docket Search System</h1>
+                <div class="header-actions">
+                    <span id="welcomeMessage" class="welcome-text"></span>
+                    <button id="logoutBtn" class="btn btn--outline">Logout</button>
+                </div>
+            </header>
 
-    // Authorization scopes required
-    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+            <div class="search-section">
+                <div class="card">
+                    <div class="card__body">
+                        <h2>Search Records</h2>
+                        <form id="searchForm" class="search-form">
+                            <div class="form-group">
+                                <label for="searchInput" class="form-label">Enter DOT Number or Docket Number</label>
+                                <input type="text" id="searchInput" name="searchInput" class="form-control" 
+                                       placeholder="e.g., 1234567 or MC-123456" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Search Type</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="searchType" value="dot" checked>
+                                        <span class="radio-text">DOT Number</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="searchType" value="docket">
+                                        <span class="radio-text">Docket Number</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn--primary">
+                                <span id="searchButtonText">Search</span>
+                                <span id="searchSpinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
-    let tokenClient;
-    let gapiInited = false;
-    let gisInited = false;
+            <div id="resultsSection" class="results-section hidden">
+                <div class="card">
+                    <div class="card__body">
+                        <h3>Search Results</h3>
+                        <div id="resultsContainer"></div>
+                    </div>
+                </div>
+            </div>
 
-    document.getElementById('authorize_button').onclick = handleAuthClick;
-    document.getElementById('signout_button').onclick = handleSignoutClick;
+            <div id="noResults" class="no-results hidden">
+                <div class="card">
+                    <div class="card__body">
+                        <p class="no-results-text">No records found matching your search criteria.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function gapiLoaded() {
-      gapi.load('client', initializeGapiClient);
-    }
-
-    async function initializeGapiClient() {
-      await gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: [DISCOVERY_DOC],
-      });
-      gapiInited = true;
-      maybeEnableButtons();
-    }
-
-    function gisLoaded() {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: '', // defined later
-      });
-      gisInited = true;
-      maybeEnableButtons();
-    }
-
-    function maybeEnableButtons() {
-      if (gapiInited && gisInited) {
-        document.getElementById('authorize_button').style.display = 'block';
-      }
-    }
-
-    function handleAuthClick() {
-      tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-          throw resp;
-        }
-        document.getElementById('signout_button').style.display = 'block';
-        await listMajors();
-      };
-      if (gapi.client.getToken() === null) {
-        // Prompt the user to select a Google Account and ask for consent to share their data
-        tokenClient.requestAccessToken({prompt: 'consent'});
-      } else {
-        // Skip display of account chooser and consent dialog for an existing session
-        tokenClient.requestAccessToken({prompt: ''});
-      }
-    }
-
-    function handleSignoutClick() {
-      const token = gapi.client.getToken();
-      if (token !== null) {
-        google.accounts.oauth2.revoke(token.access_token);
-        gapi.client.setToken('');
-        document.getElementById('content').innerText = '';
-        document.getElementById('signout_button').style.display = 'none';
-      }
-    }
-
-    async function listMajors() {
-      let response;
-      try {
-        // TODO: Replace with your own spreadsheet ID and range
-        response = await gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: 'YOUR_SPREADSHEET_ID',
-          range: 'Sheet1!A1:E10',
-        });
-      } catch (err) {
-        document.getElementById('content').innerText = err.message;
-        return;
-      }
-      const range = response.result;
-      if (!range || !range.values || range.values.length == 0) {
-        document.getElementById('content').innerText = 'No values found.';
-        return;
-      }
-      document.getElementById('content').innerText = JSON.stringify(range.values, null, 2);
-    }
-
-    window.gapiLoaded = gapiLoaded;
-    window.gisLoaded = gisLoaded;
-  </script>
-  <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
-  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script src="app.js"></script>
 </body>
 </html>
