@@ -141,17 +141,24 @@ async function login(username, password) {
 
 function toggleAdminFeatures(username) {
     const showAllButton = document.getElementById('showAllButton');
+    const debugContainer = document.getElementById('debugContainer');
     
     if (username === 'admin') {
         // Show admin features
         if (showAllButton) {
             showAllButton.classList.remove('hidden');
         }
+        if (debugContainer) {
+            debugContainer.classList.remove('hidden');
+        }
         debugLog(`Admin features enabled for user: ${username}`);
     } else {
         // Hide admin features
         if (showAllButton) {
             showAllButton.classList.add('hidden');
+        }
+        if (debugContainer) {
+            debugContainer.classList.add('hidden');
         }
         debugLog(`Admin features disabled for user: ${username}`);
     }
@@ -215,24 +222,6 @@ async function searchRecords(searchTerm, searchType) {
         clearSearchResults();
         clearErrors();
         
-        // First, let's test if we can get ALL records
-        debugLog(`Testing connection with SELECT ALL query...`);
-        const { data: allData, error: allError } = await supabase
-            .from('dot_records')
-            .select('*');
-            
-        if (allError) {
-            debugLog(`ALL RECORDS ERROR: ${allError.message}`);
-            throw allError;
-        }
-        
-        debugLog(`ALL RECORDS: Found ${allData ? allData.length : 0} total records in table`);
-        if (allData && allData.length > 0) {
-            debugLog(`Sample record: ${JSON.stringify(allData[0], null, 2)}`);
-            debugLog(`Available dot_numbers: ${allData.map(r => r.dot_number).join(', ')}`);
-            debugLog(`Available docket_numbers: ${allData.map(r => r.docket_number).join(', ')}`);
-        }
-        
         // Validate input
         if (!searchTerm.trim()) {
             throw new Error('Please enter a search term');
@@ -264,7 +253,6 @@ async function searchRecords(searchTerm, searchType) {
         }
         
         debugLog(`Filtered query returned ${data ? data.length : 0} results`);
-        debugLog(`Filtered query raw data: ${JSON.stringify(data, null, 2)}`);
         
         // Log the search
         await logSearch(searchTerm, searchType, data ? data.length : 0);
