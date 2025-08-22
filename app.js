@@ -2,8 +2,17 @@
 const SUPABASE_URL = 'https://quvalmzdeziaxnqpmkqa.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1dmFsbXpkZXppYXhucXBta3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODUxODEsImV4cCI6MjA3MTQ2MTE4MX0.nsaaeBLXJ0LnHApKZV1CArL33U_0kVGg6XnD2geG9Sk';
 
-// Initialize Supabase client
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client - check if supabase is loaded
+let supabase;
+try {
+    if (typeof window.supabase !== 'undefined') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+        console.error('Supabase library not loaded');
+    }
+} catch (error) {
+    console.error('Error initializing Supabase:', error);
+}
 
 // Application State
 class AppState {
@@ -15,17 +24,22 @@ class AppState {
     setUser(user) {
         this.currentUser = user;
         if (user) {
-            document.getElementById('userEmail').textContent = user.email;
+            const userEmailElement = document.getElementById('userEmail');
+            if (userEmailElement) {
+                userEmailElement.textContent = user.email;
+            }
         }
     }
     
     setLoading(loading) {
         this.isLoading = loading;
         const overlay = document.getElementById('loadingOverlay');
-        if (loading) {
-            overlay.classList.remove('hidden');
-        } else {
-            overlay.classList.add('hidden');
+        if (overlay) {
+            if (loading) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
         }
     }
 }
@@ -64,6 +78,10 @@ class PageManager {
 class AuthManager {
     static async login(email, password) {
         try {
+            if (!supabase) {
+                throw new Error('Supabase not initialized');
+            }
+            
             appState.setLoading(true);
             this.clearErrors('login');
             
@@ -89,6 +107,10 @@ class AuthManager {
     
     static async signup(email, password) {
         try {
+            if (!supabase) {
+                throw new Error('Supabase not initialized');
+            }
+            
             appState.setLoading(true);
             this.clearErrors('signup');
             
@@ -113,6 +135,10 @@ class AuthManager {
     
     static async logout() {
         try {
+            if (!supabase) {
+                throw new Error('Supabase not initialized');
+            }
+            
             appState.setLoading(true);
             
             const { error } = await supabase.auth.signOut();
@@ -133,6 +159,10 @@ class AuthManager {
     
     static async getCurrentUser() {
         try {
+            if (!supabase) {
+                return null;
+            }
+            
             const { data: { user }, error } = await supabase.auth.getUser();
             
             if (error) throw error;
@@ -179,6 +209,10 @@ class AuthManager {
 class SearchManager {
     static async searchRecords(searchTerm, searchType) {
         try {
+            if (!supabase) {
+                throw new Error('Supabase not initialized');
+            }
+            
             appState.setLoading(true);
             this.clearSearchResults();
             this.clearErrors();
@@ -225,6 +259,10 @@ class SearchManager {
     
     static async logSearch(searchTerm, searchType, resultsFound) {
         try {
+            if (!supabase) {
+                return;
+            }
+            
             const user = await AuthManager.getCurrentUser();
             
             const { error } = await supabase.from('usage_logs').insert({
@@ -248,7 +286,9 @@ class SearchManager {
         const noResultsContainer = document.getElementById('noResultsContainer');
         const resultsContent = document.getElementById('resultsContent');
         
-        noResultsContainer.classList.add('hidden');
+        if (noResultsContainer) noResultsContainer.classList.add('hidden');
+        
+        if (!resultsContainer || !resultsContent) return;
         
         // Create table
         const table = document.createElement('table');
@@ -329,16 +369,16 @@ class SearchManager {
         const resultsContainer = document.getElementById('resultsContainer');
         const noResultsContainer = document.getElementById('noResultsContainer');
         
-        resultsContainer.classList.add('hidden');
-        noResultsContainer.classList.remove('hidden');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        if (noResultsContainer) noResultsContainer.classList.remove('hidden');
     }
     
     static clearSearchResults() {
         const resultsContainer = document.getElementById('resultsContainer');
         const noResultsContainer = document.getElementById('noResultsContainer');
         
-        resultsContainer.classList.add('hidden');
-        noResultsContainer.classList.add('hidden');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        if (noResultsContainer) noResultsContainer.classList.add('hidden');
     }
     
     static showError(message) {
@@ -383,15 +423,15 @@ class FormValidator {
         const errors = {};
         
         if (!email || !email.trim()) {
-            errors.email = 'Email is required';
+            errors.signupEmail = 'Email is required';
         } else if (!this.isValidEmail(email)) {
-            errors.email = 'Please enter a valid email address';
+            errors.signupEmail = 'Please enter a valid email address';
         }
         
         if (!password || !password.trim()) {
-            errors.password = 'Password is required';
+            errors.signupPassword = 'Password is required';
         } else if (password.length < 6) {
-            errors.password = 'Password must be at least 6 characters long';
+            errors.signupPassword = 'Password must be at least 6 characters long';
         }
         
         if (!confirmPassword || !confirmPassword.trim()) {
@@ -411,19 +451,10 @@ class FormValidator {
         return emailRegex.test(email);
     }
     
-    static displayErrors(errors, prefix) {
-        // Clear previous errors
-        Object.keys(errors).forEach(field => {
-            const errorElement = document.getElementById(`${prefix}${field.charAt(0).toUpperCase() + field.slice(1)}Error`);
-            if (errorElement) {
-                errorElement.textContent = '';
-                errorElement.classList.add('hidden');
-            }
-        });
-        
+    static displayErrors(errors) {
         // Display new errors
         Object.keys(errors).forEach(field => {
-            const errorElement = document.getElementById(`${prefix}${field.charAt(0).toUpperCase() + field.slice(1)}Error`);
+            const errorElement = document.getElementById(`${field}Error`);
             if (errorElement) {
                 errorElement.textContent = errors[field];
                 errorElement.classList.remove('hidden');
@@ -434,18 +465,20 @@ class FormValidator {
 
 // Button State Manager
 class ButtonManager {
-    static setLoading(buttonId, textId, spinnerId, loading) {
-        const button = document.getElementById(buttonId);
-        const text = document.getElementById(textId);
-        const spinner = document.getElementById(spinnerId);
+    static setLoading(buttonSelector, loading) {
+        const button = document.querySelector(buttonSelector);
+        if (!button) return;
         
-        if (button && text && spinner) {
+        const textSpan = button.querySelector('[id*="ButtonText"]');
+        const spinner = button.querySelector('[id*="Spinner"]');
+        
+        if (textSpan && spinner) {
             button.disabled = loading;
             if (loading) {
-                text.classList.add('hidden');
+                textSpan.classList.add('hidden');
                 spinner.classList.remove('hidden');
             } else {
-                text.classList.remove('hidden');
+                textSpan.classList.remove('hidden');
                 spinner.classList.add('hidden');
             }
         }
@@ -454,6 +487,8 @@ class ButtonManager {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('DOM loaded, initializing app...');
+    
     // Check for existing session
     try {
         const user = await AuthManager.getCurrentUser();
@@ -480,15 +515,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const validation = FormValidator.validateLogin(email, password);
             
             if (!validation.isValid) {
-                FormValidator.displayErrors(validation.errors, '');
+                FormValidator.displayErrors(validation.errors);
                 return;
             }
             
-            ButtonManager.setLoading('loginForm', 'loginButtonText', 'loginSpinner', true);
+            ButtonManager.setLoading('#loginButton', true);
             
             const result = await AuthManager.login(email, password);
             
-            ButtonManager.setLoading('loginForm', 'loginButtonText', 'loginSpinner', false);
+            ButtonManager.setLoading('#loginButton', false);
         });
     }
     
@@ -505,15 +540,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const validation = FormValidator.validateSignup(email, password, confirmPassword);
             
             if (!validation.isValid) {
-                FormValidator.displayErrors(validation.errors, 'signup');
+                FormValidator.displayErrors(validation.errors);
                 return;
             }
             
-            ButtonManager.setLoading('signupForm', 'signupButtonText', 'signupSpinner', true);
+            ButtonManager.setLoading('#signupButton', true);
             
             const result = await AuthManager.signup(email, password);
             
-            ButtonManager.setLoading('signupForm', 'signupButtonText', 'signupSpinner', false);
+            ButtonManager.setLoading('#signupButton', false);
         });
     }
     
@@ -524,13 +559,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             e.preventDefault();
             
             const searchTerm = document.getElementById('searchTerm').value;
-            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            const searchTypeInput = document.querySelector('input[name="searchType"]:checked');
+            const searchType = searchTypeInput ? searchTypeInput.value : 'DOT';
             
-            ButtonManager.setLoading('searchForm', 'searchButtonText', 'searchSpinner', true);
+            ButtonManager.setLoading('#searchButton', true);
             
             const result = await SearchManager.searchRecords(searchTerm, searchType);
             
-            ButtonManager.setLoading('searchForm', 'searchButtonText', 'searchSpinner', false);
+            ButtonManager.setLoading('#searchButton', false);
         });
     }
     
@@ -561,15 +597,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Listen for auth state changes
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-            appState.setUser(session.user);
-            PageManager.showSearch();
-        } else if (event === 'SIGNED_OUT') {
-            appState.setUser(null);
-            PageManager.showLogin();
-        }
-    });
+    if (supabase && supabase.auth) {
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event);
+            if (event === 'SIGNED_IN' && session) {
+                appState.setUser(session.user);
+                PageManager.showSearch();
+            } else if (event === 'SIGNED_OUT') {
+                appState.setUser(null);
+                PageManager.showLogin();
+            }
+        });
+    }
 });
 
 // Global error handler
