@@ -234,11 +234,9 @@ async function searchRecords(searchTerm, searchType) {
         const cleanSearchTerm = searchTerm.trim();
         
         if (searchType === 'DOT') {
-            query = query.ilike('dot_number', `%${cleanSearchTerm}%`);
-            debugLog(`Supabase Query: .from('dot_records').select('*').ilike('dot_number', '%${cleanSearchTerm}%')`);
+            query = query.eq('dot_number', `${cleanSearchTerm}`);
         } else if (searchType === 'DOCKET') {
-            query = query.ilike('docket_number', `%${cleanSearchTerm}%`);
-            debugLog(`Supabase Query: .from('dot_records').select('*').ilike('docket_number', '%${cleanSearchTerm}%')`);
+            query = query.eq('docket_number', `${cleanSearchTerm}`);
         } else {
             throw new Error('Invalid search type');
         }
