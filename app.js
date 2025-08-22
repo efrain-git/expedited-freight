@@ -316,7 +316,7 @@ async function logSearch(searchTerm, searchType, resultsFound) {
         const { error } = await supabase.from('usage_logs').insert({
             search_term: searchTerm,
             search_type: searchType,
-            user_id: null, // We don't have user IDs in our simple system
+            username: currentUser,
             results_found: resultsFound,
             search_timestamp: new Date().toISOString()
         });
