@@ -142,26 +142,19 @@ async function login(username, password) {
 let isAdmin = false;
 function toggleAdminFeatures(username) {
     const showAllButton = document.getElementById('showAllButton');
-    const debugContainer = document.getElementById('debugContainer');
     isAdmin = (username === 'admin');
     if (isAdmin) {
         // Show admin features
         if (showAllButton) {
             showAllButton.classList.remove('hidden');
         }
-        if (debugContainer) {
-            debugContainer.classList.remove('hidden');
-        }
-        debugLog(`Admin features enabled for user: ${username}`);
+        console.log(`Admin features enabled for user: ${username}`);
     } else {
         // Hide admin features
         if (showAllButton) {
             showAllButton.classList.add('hidden');
         }
-        if (debugContainer) {
-            debugContainer.classList.add('hidden');
-        }
-        debugLog(`Admin features disabled for user: ${username}`);
+        console.log(`Admin features disabled for user: ${username}`);
     }
 }
 
@@ -186,23 +179,13 @@ function logout() {
 }
 
 
-// Debug function to output to the debug span
+// Debug logging now only uses console
 function debugLog(message) {
-    const debugElement = document.getElementById('debugOutput');
-    if (debugElement) {
-        const timestamp = new Date().toLocaleTimeString();
-        debugElement.textContent += `[${timestamp}] ${message}\n`;
-        debugElement.scrollTop = debugElement.scrollHeight; // Auto scroll to bottom
-    }
-    console.log(message); // Also log to browser console
+    console.log(message);
 }
 
-// Clear debug output
 function clearDebug() {
-    const debugElement = document.getElementById('debugOutput');
-    if (debugElement) {
-        debugElement.textContent = '';
-    }
+    // No-op: debug output removed
 }
 
 
