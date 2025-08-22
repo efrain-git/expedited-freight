@@ -293,13 +293,13 @@ async function showAllRecords() {
         debugLog(`Retrieved ${data ? data.length : 0} records`);
         
         if (data && data.length > 0) {
-            displayResults(data);
+            displayUsageLogs(data);
         } else {
             displayNoResults();
         }
         
     } catch (error) {
-        debugLog(`Show all records failed: ${error.message}`);
+        debugLog(`Show usage records failed: ${error.message}`);
         showError('searchError', error.message);
     } finally {
         setLoading(false);
@@ -412,6 +412,80 @@ function displayResults(results) {
     
     resultsContainer.classList.remove('hidden');
 }
+
+function displayUsageLogs(usageLogs) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const noResultsContainer = document.getElementById('noResultsContainer');
+    const resultsContent = document.getElementById('resultsContent');
+    
+    if (noResultsContainer) noResultsContainer.classList.add('hidden');
+    if (!resultsContainer || !resultsContent) return;
+    
+    // Create table for usage logs
+    const table = document.createElement('table');
+    table.className = 'results-table';
+    
+    // Create header for usage logs
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    
+    const headers = [
+        'Search Term',
+        'Search Type',
+        'Username',
+        'Results Found',
+        'Search Date',
+        'Search Time'
+    ];
+    
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
+    
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Create body for usage logs
+    const tbody = document.createElement('tbody');
+    
+    usageLogs.forEach(record => {
+        const row = document.createElement('tr');
+        
+        const searchDate = record.search_timestamp ? new Date(record.search_timestamp) : null;
+        
+        const cells = [
+            record.search_term || '-',
+            record.search_type || '-',
+            record.username || record.user_id || '-', // Handle both column names
+            record.results_found || '0',
+            searchDate ? searchDate.toLocaleDateString() : '-',
+            searchDate ? searchDate.toLocaleTimeString() : '-'
+        ];
+        
+        cells.forEach(cellData => {
+            const td = document.createElement('td');
+            td.textContent = cellData;
+            row.appendChild(td);
+        });
+        
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+    
+    // Create table wrapper
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'table-wrapper';
+    tableWrapper.appendChild(table);
+    
+    resultsContent.innerHTML = '';
+    resultsContent.appendChild(tableWrapper);
+    
+    resultsContainer.classList.remove('hidden');
+}
+
 
 function displayNoResults() {
     const resultsContainer = document.getElementById('resultsContainer');
