@@ -154,9 +154,34 @@ function logout() {
     clearSearchResults();
 }
 
+// Debug function to output to the debug span
+function debugLog(message) {
+    const debugElement = document.getElementById('debugOutput');
+    if (debugElement) {
+        const timestamp = new Date().toLocaleTimeString();
+        debugElement.textContent += `[${timestamp}] ${message}\n`;
+        debugElement.scrollTop = debugElement.scrollHeight; // Auto scroll to bottom
+    }
+    console.log(message); // Also log to browser console
+}
+
+// Clear debug output
+function clearDebug() {
+    const debugElement = document.getElementById('debugOutput');
+    if (debugElement) {
+        debugElement.textContent = '';
+    }
+}
+
+
 // Search Functions
 async function searchRecords(searchTerm, searchType) {
     try {
+        clearDebug(); // Clear previous debug info
+        debugLog(`Starting search...`);
+        debugLog(`Search Term: "${searchTerm}"`);
+        debugLog(`Search Type: ${searchType}`);
+        
         if (!supabase) {
             throw new Error('Supabase not initialized');
         }
@@ -170,42 +195,56 @@ async function searchRecords(searchTerm, searchType) {
             throw new Error('Please enter a search term');
         }
         
+        debugLog(`Building query for ${searchType} search...`);
+        
         // Build query based on search type
         let query = supabase.from('dot_records').select('*');
         
         if (searchType === 'DOT') {
-            //query = query.eq('dot_number', searchTerm.trim());
-            //query = query.ilike('dot_number','%1234%');
+            query = query.ilike('dot_number', `%${searchTerm.trim()}%`);
+            debugLog(`Query: dot_number ILIKE '%${searchTerm.trim()}%'`);
         } else if (searchType === 'DOCKET') {
-            query = query.eq('docket_number', searchTerm.trim().toUpperCase());
+            query = query.ilike('docket_number', `%${searchTerm.trim()}%`);
+            debugLog(`Query: docket_number ILIKE '%${searchTerm.trim()}%'`);
         } else {
             throw new Error('Invalid search type');
         }
         
+        debugLog(`Executing query...`);
         const { data, error } = await query;
         
-        if (error) throw error;
+        if (error) {
+            debugLog(`Query error: ${error.message}`);
+            throw error;
+        }
+        
+        debugLog(`Query returned ${data ? data.length : 0} results`);
         
         // Log the search
         await logSearch(searchTerm, searchType, data ? data.length : 0);
         
         // Display results
         if (data && data.length > 0) {
+            debugLog(`Displaying ${data.length} results`);
             displayResults(data);
         } else {
+            debugLog(`No results found - showing no results message`);
             displayNoResults();
         }
         
         return { success: true, results: data };
         
     } catch (error) {
+        debugLog(`Search failed: ${error.message}`);
         console.error('Search error:', error);
         showError('searchError', error.message);
         return { success: false, error: error.message };
     } finally {
         setLoading(false);
+        debugLog(`Search completed`);
     }
 }
+
 
 async function logSearch(searchTerm, searchType, resultsFound) {
     try {
