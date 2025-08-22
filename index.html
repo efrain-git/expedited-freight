@@ -8,7 +8,7 @@
 </head>
 <body>
     <!-- Login Page -->
-    <div id="loginPage" class="page">
+    <div id="loginPage" class="page active">
         <div class="container">
             <div class="login-container">
                 <div class="card">
@@ -18,9 +18,9 @@
                         
                         <form id="loginForm" class="login-form">
                             <div class="form-group">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" id="username" name="username" class="form-control" required>
-                                <div class="error-message" id="usernameError"></div>
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" id="email" name="email" class="form-control" required>
+                                <div class="error-message" id="emailError"></div>
                             </div>
                             
                             <div class="form-group">
@@ -35,9 +35,57 @@
                             </button>
                         </form>
                         
-                        <div class="demo-info">
-                            <p><strong>Demo:</strong> Enter any username and password to login</p>
+                        <div class="auth-links">
+                            <p>Don't have an account? <a href="#" id="showSignup">Sign up here</a></p>
                         </div>
+                        
+                        <div class="error-message" id="loginError"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Page -->
+    <div id="signupPage" class="page">
+        <div class="container">
+            <div class="login-container">
+                <div class="card">
+                    <div class="card__body">
+                        <h1 class="login-title">Create Account</h1>
+                        <p class="login-subtitle">Sign up to access the DOT/Docket search system</p>
+                        
+                        <form id="signupForm" class="login-form">
+                            <div class="form-group">
+                                <label for="signupEmail" class="form-label">Email</label>
+                                <input type="email" id="signupEmail" name="signupEmail" class="form-control" required>
+                                <div class="error-message" id="signupEmailError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="signupPassword" class="form-label">Password</label>
+                                <input type="password" id="signupPassword" name="signupPassword" class="form-control" required minlength="6">
+                                <div class="error-message" id="signupPasswordError"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+                                <div class="error-message" id="confirmPasswordError"></div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn--primary btn--full-width">
+                                <span id="signupButtonText">Create Account</span>
+                                <span id="signupSpinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                        
+                        <div class="auth-links">
+                            <p>Already have an account? <a href="#" id="showLogin">Login here</a></p>
+                        </div>
+                        
+                        <div class="error-message" id="signupError"></div>
+                        <div class="success-message" id="signupSuccess"></div>
                     </div>
                 </div>
             </div>
@@ -45,37 +93,41 @@
     </div>
 
     <!-- Search Page -->
-    <div id="searchPage" class="page hidden">
+    <div id="searchPage" class="page">
         <div class="container">
-            <header class="page-header">
-                <h1>DOT/Docket Search System</h1>
+            <div class="header">
+                <h1 class="page-title">DOT/Docket Search System</h1>
                 <div class="header-actions">
-                    <span id="welcomeMessage" class="welcome-text"></span>
-                    <button id="logoutBtn" class="btn btn--outline">Logout</button>
+                    <span id="userEmail" class="user-info"></span>
+                    <button id="logoutBtn" class="btn btn--secondary">Logout</button>
                 </div>
-            </header>
-
-            <div class="search-section">
+            </div>
+            
+            <div class="search-container">
                 <div class="card">
                     <div class="card__body">
-                        <h2>Search Records</h2>
+                        <h2 class="section-title">Search Records</h2>
+                        
                         <form id="searchForm" class="search-form">
                             <div class="form-group">
-                                <label for="searchInput" class="form-label">Enter DOT Number or Docket Number</label>
-                                <input type="text" id="searchInput" name="searchInput" class="form-control" 
+                                <label for="searchTerm" class="form-label">Enter DOT Number or Docket Number</label>
+                                <input type="text" id="searchTerm" name="searchTerm" class="form-control" 
                                        placeholder="e.g., 1234567 or MC-123456" required>
+                                <div class="error-message" id="searchError"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label">Search Type</label>
                                 <div class="radio-group">
                                     <label class="radio-label">
-                                        <input type="radio" name="searchType" value="dot" checked>
-                                        <span class="radio-text">DOT Number</span>
+                                        <input type="radio" name="searchType" value="DOT" checked>
+                                        <span class="radio-custom"></span>
+                                        DOT Number
                                     </label>
                                     <label class="radio-label">
-                                        <input type="radio" name="searchType" value="docket">
-                                        <span class="radio-text">Docket Number</span>
+                                        <input type="radio" name="searchType" value="DOCKET">
+                                        <span class="radio-custom"></span>
+                                        Docket Number
                                     </label>
                                 </div>
                             </div>
@@ -88,26 +140,40 @@
                     </div>
                 </div>
             </div>
-
-            <div id="resultsSection" class="results-section hidden">
+            
+            <!-- Search Results -->
+            <div id="resultsContainer" class="results-container hidden">
                 <div class="card">
                     <div class="card__body">
-                        <h3>Search Results</h3>
-                        <div id="resultsContainer"></div>
+                        <h3 class="section-title">Search Results</h3>
+                        <div id="resultsContent"></div>
                     </div>
                 </div>
             </div>
-
-            <div id="noResults" class="no-results hidden">
+            
+            <!-- No Results -->
+            <div id="noResultsContainer" class="results-container hidden">
                 <div class="card">
                     <div class="card__body">
-                        <p class="no-results-text">No records found matching your search criteria.</p>
+                        <div class="no-results">
+                            <h3>No Results Found</h3>
+                            <p>No records found matching your search criteria. Please verify the number and try again.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Supabase JS Library -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    
+    <!-- Main Application Script -->
     <script src="app.js"></script>
 </body>
 </html>
