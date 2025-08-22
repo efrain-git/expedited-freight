@@ -18,9 +18,9 @@
                         
                         <form id="loginForm" class="login-form">
                             <div class="form-group">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" id="email" name="email" class="form-control" required>
-                                <div class="error-message hidden" id="emailError"></div>
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" id="username" name="username" class="form-control" required>
+                                <div class="error-message hidden" id="usernameError"></div>
                             </div>
                             
                             <div class="form-group">
@@ -35,57 +35,13 @@
                             </button>
                         </form>
                         
-                        <div class="auth-links">
-                            <p>Don't have an account? <a href="#" id="showSignup">Sign up here</a></p>
-                        </div>
-                        
                         <div class="error-message hidden" id="loginError"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Signup Page -->
-    <div id="signupPage" class="page">
-        <div class="container">
-            <div class="login-container">
-                <div class="card">
-                    <div class="card__body">
-                        <h1 class="login-title">Create Account</h1>
-                        <p class="login-subtitle">Sign up to access the DOT/Docket search system</p>
                         
-                        <form id="signupForm" class="login-form">
-                            <div class="form-group">
-                                <label for="signupEmail" class="form-label">Email</label>
-                                <input type="email" id="signupEmail" name="signupEmail" class="form-control" required>
-                                <div class="error-message hidden" id="signupEmailError"></div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="signupPassword" class="form-label">Password</label>
-                                <input type="password" id="signupPassword" name="signupPassword" class="form-control" required minlength="6">
-                                <div class="error-message hidden" id="signupPasswordError"></div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
-                                <div class="error-message hidden" id="confirmPasswordError"></div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn--primary btn--full-width" id="signupButton">
-                                <span id="signupButtonText">Create Account</span>
-                                <span id="signupSpinner" class="spinner hidden"></span>
-                            </button>
-                        </form>
-                        
-                        <div class="auth-links">
-                            <p>Already have an account? <a href="#" id="showLogin">Login here</a></p>
+                        <div class="demo-info">
+                            <p><strong>Demo Credentials:</strong></p>
+                            <p>Username: <code>admin</code> | Password: <code>password123</code></p>
+                            <p>Username: <code>user1</code> | Password: <code>mypassword</code></p>
                         </div>
-                        
-                        <div class="error-message hidden" id="signupError"></div>
-                        <div class="success-message hidden" id="signupSuccess"></div>
                     </div>
                 </div>
             </div>
@@ -98,7 +54,7 @@
             <div class="header">
                 <h1 class="page-title">DOT/Docket Search System</h1>
                 <div class="header-actions">
-                    <span id="userEmail" class="user-info"></span>
+                    <span id="currentUser" class="user-info">Welcome, <span id="username-display">User</span>!</span>
                     <button id="logoutBtn" class="btn btn--secondary">Logout</button>
                 </div>
             </div>
