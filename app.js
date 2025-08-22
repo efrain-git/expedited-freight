@@ -139,11 +139,12 @@ async function login(username, password) {
     }
 }
 
+let isAdmin = false;
 function toggleAdminFeatures(username) {
     const showAllButton = document.getElementById('showAllButton');
     const debugContainer = document.getElementById('debugContainer');
-    
-    if (username === 'admin') {
+    isAdmin = (username === 'admin');
+    if (isAdmin) {
         // Show admin features
         if (showAllButton) {
             showAllButton.classList.remove('hidden');
@@ -330,22 +331,25 @@ async function logSearch(searchTerm, searchType, resultsFound) {
     }
 }
 
+
 function displayResults(results) {
+    if (isAdmin) {
+        displayResultsFull(results);
+    } else {
+        displayResultsLimited(results);
+    }
+}
+
+function displayResultsFull(results) {
     const resultsContainer = document.getElementById('resultsContainer');
     const noResultsContainer = document.getElementById('noResultsContainer');
     const resultsContent = document.getElementById('resultsContent');
-    
     if (noResultsContainer) noResultsContainer.classList.add('hidden');
     if (!resultsContainer || !resultsContent) return;
-    
-    // Create table
     const table = document.createElement('table');
     table.className = 'results-table';
-    
-    // Create header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
-    
     const headers = [
         'DOT Number',
         'Docket Number',
@@ -360,22 +364,16 @@ function displayResults(results) {
         'Created Date',
         'Source'
     ];
-    
     headers.forEach(header => {
         const th = document.createElement('th');
         th.textContent = header;
         headerRow.appendChild(th);
     });
-    
     thead.appendChild(headerRow);
     table.appendChild(thead);
-    
-    // Create body
     const tbody = document.createElement('tbody');
-    
     results.forEach(record => {
         const row = document.createElement('tr');
-        
         const cells = [
             record.dot_number || '-',
             record.docket_number || '-',
@@ -390,26 +388,75 @@ function displayResults(results) {
             record.created_date ? new Date(record.created_date).toLocaleDateString() : '-',
             record.source || '-'
         ];
-        
         cells.forEach(cellData => {
             const td = document.createElement('td');
             td.textContent = cellData;
             row.appendChild(td);
         });
-        
         tbody.appendChild(row);
     });
-    
     table.appendChild(tbody);
-    
-    // Create table wrapper for responsive scrolling
     const tableWrapper = document.createElement('div');
     tableWrapper.className = 'table-wrapper';
     tableWrapper.appendChild(table);
-    
     resultsContent.innerHTML = '';
     resultsContent.appendChild(tableWrapper);
-    
+    resultsContainer.classList.remove('hidden');
+}
+
+function displayResultsLimited(results) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const noResultsContainer = document.getElementById('noResultsContainer');
+    const resultsContent = document.getElementById('resultsContent');
+    if (noResultsContainer) noResultsContainer.classList.add('hidden');
+    if (!resultsContainer || !resultsContent) return;
+    const table = document.createElement('table');
+    table.className = 'results-table';
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const headers = [
+        'DOT Number',
+        'Docket Number',
+        'Legal Name',
+        'DBA Name',
+        'Business Address',
+        'City',
+        'State',
+        'Zip Code'
+    ];
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    results.forEach(record => {
+        const row = document.createElement('tr');
+        const cells = [
+            record.dot_number || '-',
+            record.docket_number || '-',
+            record.legal_name || '-',
+            record.dba_name || '-',
+            record.business_street || '-',
+            record.business_city || '-',
+            record.business_state_code || '-',
+            record.business_zip_code || '-'
+        ];
+        cells.forEach(cellData => {
+            const td = document.createElement('td');
+            td.textContent = cellData;
+            row.appendChild(td);
+        });
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'table-wrapper';
+    tableWrapper.appendChild(table);
+    resultsContent.innerHTML = '';
+    resultsContent.appendChild(tableWrapper);
     resultsContainer.classList.remove('hidden');
 }
 
