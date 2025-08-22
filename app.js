@@ -177,10 +177,11 @@ function clearDebug() {
 // Search Functions
 async function searchRecords(searchTerm, searchType) {
     try {
-        clearDebug(); // Clear previous debug info
+        clearDebug();
         debugLog(`Starting search...`);
         debugLog(`Search Term: "${searchTerm}"`);
         debugLog(`Search Type: ${searchType}`);
+        debugLog(`Trimmed Search Term: "${searchTerm.trim()}"`);
         
         if (!supabase) {
             throw new Error('Supabase not initialized');
@@ -190,38 +191,56 @@ async function searchRecords(searchTerm, searchType) {
         clearSearchResults();
         clearErrors();
         
+        // First, let's test if we can get ALL records
+        debugLog(`Testing connection with SELECT ALL query...`);
+        const { data: allData, error: allError } = await supabase
+            .from('dot_records')
+            .select('*');
+            
+        if (allError) {
+            debugLog(`ALL RECORDS ERROR: ${allError.message}`);
+            throw allError;
+        }
+        
+        debugLog(`ALL RECORDS: Found ${allData ? allData.length : 0} total records in table`);
+        if (allData && allData.length > 0) {
+            debugLog(`Sample record: ${JSON.stringify(allData[0], null, 2)}`);
+            debugLog(`Available dot_numbers: ${allData.map(r => r.dot_number).join(', ')}`);
+            debugLog(`Available docket_numbers: ${allData.map(r => r.docket_number).join(', ')}`);
+        }
+        
         // Validate input
         if (!searchTerm.trim()) {
             throw new Error('Please enter a search term');
         }
         
-        debugLog(`Building query for ${searchType} search...`);
+        debugLog(`Building filtered query for ${searchType} search...`);
         
         // Build query based on search type
         let query = supabase.from('dot_records').select('*');
+        const cleanSearchTerm = searchTerm.trim();
         
-        // if (searchType === 'DOT') {
-        //     query = query.ilike('dot_number', `%${searchTerm.trim()}%`);
-        //     debugLog(`Query: dot_number ILIKE '%${searchTerm.trim()}%'`);
-        // } else if (searchType === 'DOCKET') {
-        //     query = query.ilike('docket_number', `%${searchTerm.trim()}%`);
-        //     debugLog(`Query: docket_number ILIKE '%${searchTerm.trim()}%'`);
-        // } else {
-        //     throw new Error('Invalid search type');
-        // }
+        if (searchType === 'DOT') {
+            query = query.ilike('dot_number', `%${cleanSearchTerm}%`);
+            debugLog(`Supabase Query: .from('dot_records').select('*').ilike('dot_number', '%${cleanSearchTerm}%')`);
+        } else if (searchType === 'DOCKET') {
+            query = query.ilike('docket_number', `%${cleanSearchTerm}%`);
+            debugLog(`Supabase Query: .from('dot_records').select('*').ilike('docket_number', '%${cleanSearchTerm}%')`);
+        } else {
+            throw new Error('Invalid search type');
+        }
         
-        debugLog(`Executing query...`);
+        debugLog(`Executing filtered query...`);
         const { data, error } = await query;
         
         if (error) {
-            debugLog(`Query error: ${error.message}`);
+            debugLog(`Filtered query error: ${error.message}`);
+            debugLog(`Error details: ${JSON.stringify(error, null, 2)}`);
             throw error;
         }
-
-        debugLog(`Query returned ${data ? data.length : 0} results`);
-        debugLog(`Raw data: ${JSON.stringify(data, null, 2)}`);
         
-        debugLog(`Query returned ${data ? data.length : 0} results`);
+        debugLog(`Filtered query returned ${data ? data.length : 0} results`);
+        debugLog(`Filtered query raw data: ${JSON.stringify(data, null, 2)}`);
         
         // Log the search
         await logSearch(searchTerm, searchType, data ? data.length : 0);
@@ -245,6 +264,34 @@ async function searchRecords(searchTerm, searchType) {
     } finally {
         setLoading(false);
         debugLog(`Search completed`);
+    }
+}
+
+// Add this function to test showing all records
+async function showAllRecords() {
+    try {
+        debugLog(`Showing all records...`);
+        setLoading(true);
+        
+        const { data, error } = await supabase
+            .from('dot_records')
+            .select('*');
+            
+        if (error) throw error;
+        
+        debugLog(`Retrieved ${data ? data.length : 0} records`);
+        
+        if (data && data.length > 0) {
+            displayResults(data);
+        } else {
+            displayNoResults();
+        }
+        
+    } catch (error) {
+        debugLog(`Show all records failed: ${error.message}`);
+        showError('searchError', error.message);
+    } finally {
+        setLoading(false);
     }
 }
 
